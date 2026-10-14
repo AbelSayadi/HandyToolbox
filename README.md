@@ -1,6 +1,6 @@
-# NiagaraParamExposer (UE 5.6.1 Editor Plugin)
+# NiagaraParamExposer (Unreal Engine Editor Plugin)
 
-Editor plugin for **Unreal Engine 5.6.1** (Win64) that exposes Niagara module stack inputs as **User Parameters**, with a **full editor tab UI**, Python/Blueprint API, and Content Browser shortcuts.
+Editor plugin tested on **Unreal Engine 5.6.1 and 5.8.3** (Win64) that exposes Niagara module stack inputs as **User Parameters**, with a **full editor tab UI**, Python/Blueprint API, and Content Browser shortcuts.
 
 ## Install
 
@@ -160,3 +160,11 @@ inputs: Color beneath Particles.Color2 becomes EmitterName_Color2, and Color
 beneath Particles.ColorMask becomes EmitterName_ColorMask. Scale Alpha and its
 nested curve scale use EmitterName_Alpha. Existing unrelated User parameters
 are still protected against overwrites; existing names are not renamed.
+
+## Engine versions
+
+See [COMPATIBILITY.md](COMPATIBILITY.md) for verified engine versions, separate binary builds, and the UEFN asset workflow. Unreal 5.8.3 now passes all four regression suites. Unreal 5.7 remains unverified.
+
+## Download prebuilt packages
+
+Ready-to-copy Windows packages for Unreal 5.6.1 and 5.8.3 are in [Packages](Packages/README.md). Each includes installation instructions.

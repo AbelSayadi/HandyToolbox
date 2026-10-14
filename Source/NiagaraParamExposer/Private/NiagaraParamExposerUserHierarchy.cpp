@@ -1,6 +1,7 @@
 // Copyright NiagaraParamExposer. All Rights Reserved.
 
 #include "NiagaraParamExposerUserHierarchy.h"
+#include "Algo/StableSort.h"
 #include "NiagaraParamExposerInputFilter.h"
 #include "NiagaraParamExposerLog.h"
 
@@ -141,7 +142,7 @@ namespace NiagaraParamExposerUserHierarchy
 		void SortCategoryChildren(UHierarchyCategory& Category)
 		{
 			TArray<TObjectPtr<UHierarchyElement>>& Children = Category.GetChildrenMutable();
-			Children.StableSort(
+			Algo::StableSort(Children,
 				[](const TObjectPtr<UHierarchyElement>& A, const TObjectPtr<UHierarchyElement>& B)
 				{
 					const UNiagaraHierarchyUserParameter* ParamA = Cast<UNiagaraHierarchyUserParameter>(A.Get());

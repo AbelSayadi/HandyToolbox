@@ -1,9 +1,10 @@
+#include "NiagaraParamExposerLibrary.h"
 #include "NiagaraParamExposerUserHierarchy.h"
 #include "NiagaraSystem.h"
 #include "ScopedTransaction.h"
 // Copyright NiagaraParamExposer. All Rights Reserved.
 
-#include "NiagaraParamExposerLibrary.h"
+
 #include "NiagaraParamExposerCore.h"
 #include "NiagaraSystem.h"
 

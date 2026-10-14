@@ -396,7 +396,9 @@ namespace NiagaraParamExposerCore
 			OutError = TEXT("NiagaraSystem is null.");
 			return false;
 		}
-		if (!NiagaraSystem->IsValid())
+		// NiagaraSystem::IsValid checks simulation/compile readiness, not object lifetime.
+        // Editor operations must remain available while a system is compiling.
+        if (!::IsValid(NiagaraSystem))
 		{
 			OutError = TEXT("Niagara system is not valid.");
 			return false;
