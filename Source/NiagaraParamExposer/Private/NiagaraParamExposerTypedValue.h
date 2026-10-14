@@ -6,7 +6,11 @@ namespace NiagaraParamExposerTypedValue
 // Validate before creating graph nodes; never silently convert an invalid value to zero.
 inline bool Parse(const FString& TypeName, const FString& Text, FNiagaraVariable& Out, FString& PinDefault)
 {
- const FString Type = TypeName.ToLower();
+ FString Type = TypeName.ToLower();
+ if (Type == TEXT("linearcolor")) Type = TEXT("color");
+ if (Type == TEXT("vector3") || Type == TEXT("vec3")) Type = TEXT("vector");
+ if (Type == TEXT("vec2")) Type = TEXT("vector2d");
+ if (Type == TEXT("int32")) Type = TEXT("int");
  const FString Value = Text.TrimStartAndEnd();
  auto Store = [&](const FNiagaraTypeDefinition& Def, const auto& Data, const FString& Default)
  {

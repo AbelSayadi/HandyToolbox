@@ -62,7 +62,10 @@ FNiagaraParamExposerOperationResult ExposeInput(UNiagaraStackFunctionInput& Inpu
  const FString InputName = Input.GetInputParameterHandle().GetName().ToString();
  if (NiagaraParamExposerInputFilter::IsParticleStateLifetime(Input.GetInputFunctionCallNode(), InputName))
   return Fail(TEXT("Select Initialize Particle > Point Attributes > Lifetime; Particle State reads Particles.Lifetime."));
- const FString ShortName = NiagaraParamExposerNaming::MakeAutoUserParameterName(EmitterName, InputName);
+ TArray<FString> InputPath;
+ for (const auto& Part : Input.GetInputParameterHandlePath()) InputPath.Add(Part.GetParameterHandleString().ToString());
+ if (InputPath.IsEmpty()) InputPath.Add(InputName);
+ const FString ShortName = NiagaraParamExposerNaming::MakeAutoUserParameterName(EmitterName, NiagaraParamExposerNaming::MakeContextualInputName(InputPath));
  FNiagaraVariable Variable(Input.GetInputType(), FName(*(TEXT("User.") + ShortName)));
  UNiagaraSystemEditorData* Data = Cast<UNiagaraSystemEditorData>(System.GetEditorData());
  if (!Data) return Fail(TEXT("Niagara system editor data is unavailable."));
@@ -187,12 +190,12 @@ static void ExposeSelected(TWeakObjectPtr<UNiagaraSystem> System)
 void Register()
 {
  FNPEDirectCommands::Register();
- // Register explicitly in ToolMenus so the command is visible near the start of
+ // Register explicitly in ToolMenus so the command is visible at the end of
  // Niagara's toolbar and in its Asset menu, independent of legacy extender order.
  UToolMenus* Menus = UToolMenus::Get();
  FToolMenuOwnerScoped Owner(TEXT("NiagaraParamExposerDirect"));
  auto& Toolbar = Menus->ExtendMenu(TEXT("AssetEditor.Niagara.ToolBar"))->AddSection(
-  TEXT("NPEExpose"), FText::GetEmpty(), FToolMenuInsert(TEXT("Asset"), EToolMenuInsertType::Before));
+  TEXT("NPEExpose"), FText::GetEmpty(), FToolMenuInsert(TEXT("Scalability"), EToolMenuInsertType::After));
  Toolbar.AddEntry(FToolMenuEntry::InitToolBarButton(FNPEDirectCommands::Get().Expose));
  Menus->ExtendMenu(TEXT("AssetEditor.Niagara.MainMenu.Asset"))->AddSection(TEXT("NPEExpose"), LOCTEXT("NPE", "Parameters"))
   .AddMenuEntry(FNPEDirectCommands::Get().Expose);

@@ -62,6 +62,7 @@ public:
         for (const TCHAR* Type : {TEXT("Float"), TEXT("Vector2D"), TEXT("Vector"), TEXT("Color"), TEXT("Int"), TEXT("Bool")})
             SetParamTypes.Add(MakeShared<FString>(Type));
         SelectedSetParamType = SetParamTypes[0];
+        SelectedCreateType = SetParamTypes[0];
 		bAutoName = true;
 		bAssignEmitterCategory = true;
 
@@ -182,7 +183,16 @@ public:
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(0.3f)[SAssignNew(CreateNameBox, SEditableTextBox).HintText(LOCTEXT("CreateName", "Name"))]
-						+ SHorizontalBox::Slot().FillWidth(0.2f)[SAssignNew(CreateTypeBox, SEditableTextBox).Text(FText::FromString(TEXT("float")))]
+						+ SHorizontalBox::Slot().FillWidth(0.2f)[SNew(SComboBox<TSharedPtr<FString>>)
+                            .OptionsSource(&SetParamTypes).InitiallySelectedItem(SelectedCreateType)
+                            .OnGenerateWidget(this, &SNiagaraParamExposerEditorTab::OnGenerateStringWidget)
+                            .OnSelectionChanged_Lambda([this](TSharedPtr<FString> Type, ESelectInfo::Type)
+                            {
+                                SelectedCreateType = Type;
+                                const FString Default = *Type == TEXT("Color") ? TEXT("1,1,1,1") : *Type == TEXT("Vector") ? TEXT("0,0,0") : *Type == TEXT("Vector2D") ? TEXT("0,0") : *Type == TEXT("Bool") ? TEXT("false") : TEXT("0");
+                                CreateValueBox->SetText(FText::FromString(Default));
+                            })
+                            [SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(*SelectedCreateType); })]]
 						+ SHorizontalBox::Slot().FillWidth(0.2f)[SAssignNew(CreateValueBox, SEditableTextBox).Text(FText::FromString(TEXT("0")))]
 						+ SHorizontalBox::Slot().FillWidth(0.3f)[SAssignNew(CreateCategoryBox, SEditableTextBox).HintText(LOCTEXT("CreateCategory", "Optional category"))]
 					]
@@ -286,7 +296,7 @@ private:
 	FString SearchFilterText;
 	TSharedPtr<SEditableTextBox> RenameEmitterNameBox;
 	TSharedPtr<SEditableTextBox> CreateNameBox;
-	TSharedPtr<SEditableTextBox> CreateTypeBox;
+	TSharedPtr<FString> SelectedCreateType;
 	TSharedPtr<SEditableTextBox> CreateValueBox;
 	TSharedPtr<SEditableTextBox> CreateCategoryBox;
 	TArray<TSharedPtr<FString>> SetParamTypes;
@@ -710,12 +720,17 @@ private:
 		{
 			return FReply::Handled();
 		}
+        if (bAssignEmitterCategory && !SelectedEmitter.IsValid())
+        {
+            AppendLog(TEXT("Select an emitter to place the new parameter in its category."));
+            return FReply::Handled();
+        }
 		const auto Result = NiagaraParamExposerCore::CreateCustomUserParameter(
 			System,
 			CreateNameBox->GetText().ToString(),
-			CreateTypeBox->GetText().ToString(),
+			*SelectedCreateType,
 			CreateValueBox->GetText().ToString(),
-			CreateCategoryBox->GetText().ToString(),
+			bAssignEmitterCategory ? *SelectedEmitter : CreateCategoryBox->GetText().ToString(),
 			true);
 		AppendLog(Result.Message);
 		return FReply::Handled();
@@ -736,7 +751,7 @@ private:
 			*SelectedSetParamType,
 			SetParamValueBox->GetText().ToString(),
 			SetParamLinkBox->GetText().ToString(),
-			true);
+			true, bAssignEmitterCategory);
 		AppendLog(Result.Message);
 		RefreshInputRows();
 		return FReply::Handled();

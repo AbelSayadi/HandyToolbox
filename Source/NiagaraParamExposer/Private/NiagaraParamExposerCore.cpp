@@ -1,7 +1,7 @@
-#include "NiagaraParamExposerTypedValue.h"
 // Copyright NiagaraParamExposer. All Rights Reserved.
 
 #include "NiagaraParamExposerCore.h"
+#include "NiagaraParamExposerTypedValue.h"
 #include "NiagaraParamExposerStackLink.h"
 #include "NiagaraParamExposerNiagaraHelpers.h"
 #include "NiagaraParamExposerUserHierarchy.h"
@@ -1151,59 +1151,11 @@ namespace NiagaraParamExposerCore
 			return MakeOpFailure(TEXT("ShortName is empty."));
 		}
 
-		auto MakeType = [&](const FString& Type) -> FNiagaraTypeDefinition
-		{
-			if (Type.Equals(TEXT("float"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetFloatDef();
-			}
-			if (Type.Equals(TEXT("int"), ESearchCase::IgnoreCase) || Type.Equals(TEXT("int32"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetIntDef();
-			}
-			if (Type.Equals(TEXT("bool"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetBoolDef();
-			}
-			if (Type.Equals(TEXT("Vector2D"), ESearchCase::IgnoreCase) || Type.Equals(TEXT("Vec2"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetVec2Def();
-			}
-			if (Type.Equals(TEXT("Vector"), ESearchCase::IgnoreCase) || Type.Equals(TEXT("Vector3"), ESearchCase::IgnoreCase)
-				|| Type.Equals(TEXT("Vec3"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetVec3Def();
-			}
-			if (Type.Equals(TEXT("LinearColor"), ESearchCase::IgnoreCase) || Type.Equals(TEXT("Color"), ESearchCase::IgnoreCase))
-			{
-				return FNiagaraTypeDefinition::GetColorDef();
-			}
-			return FNiagaraTypeDefinition::GetFloatDef();
-		};
-
-		FNiagaraVariable UserVariable(MakeType(TypeName), FName(*ShortName));
-		UserVariable.AllocateData();
-
-		const FString TrimmedValue = ValueAsString.TrimStartAndEnd();
-		if (UserVariable.GetType() == FNiagaraTypeDefinition::GetFloatDef())
-		{
-			double Parsed = 0.0;
-			LexTryParseString(Parsed, *TrimmedValue);
-			const float Value = static_cast<float>(Parsed);
-			FMemory::Memcpy(UserVariable.GetData(), &Value, sizeof(float));
-		}
-		else if (UserVariable.GetType() == FNiagaraTypeDefinition::GetIntDef())
-		{
-			int32 Value = 0;
-			LexTryParseString(Value, *TrimmedValue);
-			FMemory::Memcpy(UserVariable.GetData(), &Value, sizeof(int32));
-		}
-		else if (UserVariable.GetType() == FNiagaraTypeDefinition::GetBoolDef())
-		{
-			bool Value = TrimmedValue.Equals(TEXT("true"), ESearchCase::IgnoreCase) || TrimmedValue == TEXT("1");
-			const FNiagaraBool BoolValue(Value);
-			FMemory::Memcpy(UserVariable.GetData(), &BoolValue, sizeof(FNiagaraBool));
-		}
+        FNiagaraVariable UserVariable;
+        FString PinDefault;
+        if (!NiagaraParamExposerTypedValue::Parse(TypeName, ValueAsString, UserVariable, PinDefault))
+            return MakeOpFailure(TEXT("Invalid value for selected type. Vectors use X,Y,Z; colors use R,G,B,A."));
+        UserVariable.SetName(FName(*ShortName));
 
 		TUniquePtr<FScopedTransaction> Transaction;
 		if (bUseTransaction)
@@ -1221,11 +1173,9 @@ namespace NiagaraParamExposerCore
 		if (!OptionalCategoryName.IsEmpty())
 		{
 			FString CategoryError;
-			NiagaraParamExposerUserHierarchy::AssignUserParametersToCategory(
-				*NiagaraSystem,
-				OptionalCategoryName,
-				{ShortName},
-				CategoryError);
+            if (!NiagaraParamExposerUserHierarchy::AssignUserParametersToCategory(
+                *NiagaraSystem, OptionalCategoryName, {ShortName}, CategoryError))
+                return MakeOpFailure(CategoryError);
 		}
 
 		FinalizeSystemEdit(NiagaraSystem);
@@ -1311,7 +1261,7 @@ namespace NiagaraParamExposerCore
 		const FString& TypeName,
         const FString& ValueAsString,
 		const FString& LinkToUserParameterName,
-		bool bUseTransaction)
+		bool bUseTransaction, bool bAssignToEmitterCategory)
 	{
         FNiagaraVariable TypedValue;
         FString PinDefault;
@@ -1432,6 +1382,9 @@ namespace NiagaraParamExposerCore
 			{
 				return MakeOpFailure(Error);
 			}
+            if (bAssignToEmitterCategory && !NiagaraParamExposerUserHierarchy::AssignUserParametersToCategory(
+                *NiagaraSystem, EmitterName, {ShortUserName}, Error))
+                return MakeOpFailure(Error);
 		}
 
 		FinalizeSystemEdit(NiagaraSystem);

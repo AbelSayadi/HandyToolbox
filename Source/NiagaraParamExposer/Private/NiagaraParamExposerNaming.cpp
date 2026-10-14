@@ -76,6 +76,7 @@ namespace NiagaraParamExposerNaming
 		ReloadRulesFromConfig();
 		FString Working = RawInputName;
 		Working.TrimStartAndEndInline();
+        if (Working.Equals(TEXT("Scale Alpha"), ESearchCase::IgnoreCase) || Working.Equals(TEXT("ScaleAlpha"), ESearchCase::IgnoreCase)) return TEXT("Alpha");
 
 		for (const FPhraseReplacement& Rule : GPhraseReplacements)
 		{
@@ -89,6 +90,25 @@ namespace NiagaraParamExposerNaming
 		Working.ReplaceInline(TEXT("Sprite "), TEXT(""));
 		return ToPascalCaseNoSpaces(Working);
 	}
+
+    FString MakeContextualInputName(const TArray<FString>& InputPath)
+    {
+        if (InputPath.IsEmpty()) return FString();
+        auto Leaf = [](FString Name) { int32 Dot; if (Name.FindLastChar('.', Dot)) Name = Name.Mid(Dot+1); return Name; };
+        const FString Selected = Leaf(InputPath.Last());
+        if (InputPath.Num()>1 && (Selected.Equals(TEXT("Color"), ESearchCase::IgnoreCase) || Selected.Equals(TEXT("Scale Curve"), ESearchCase::IgnoreCase) || Selected.Equals(TEXT("ScaleCurve"), ESearchCase::IgnoreCase)))
+        {
+            // Dynamic input labels describe implementation, not the attribute they drive.
+            for (const FString& Part : InputPath)
+            {
+                const FString Name = Leaf(Part);
+                if (Name.Equals(TEXT("Scale Alpha"), ESearchCase::IgnoreCase) || Name.Equals(TEXT("Alpha"), ESearchCase::IgnoreCase)) return TEXT("Alpha");
+            }
+            // UE stores ancestors nearest-first, then the selected input.
+            return Leaf(InputPath[InputPath.Num()-2]);
+        }
+        return Selected;
+    }
 
 	FString MakeAutoUserParameterName(const FString& EmitterName, const FString& RawInputName)
 	{

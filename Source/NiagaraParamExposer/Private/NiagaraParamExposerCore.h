@@ -56,7 +56,7 @@ namespace NiagaraParamExposerCore
   UNiagaraSystem* NiagaraSystem, const FString& EmitterName,
   ENiagaraParamExposerScriptUsage ScriptUsage, const FString& ParameterName,
   const FString& TypeName, const FString& ValueAsString,
-  const FString& LinkToUserParameterName, bool bUseTransaction);
+  const FString& LinkToUserParameterName, bool bUseTransaction, bool bAssignToEmitterCategory = true);
 
 	FNiagaraParamExposerOperationResult AddSetParameterModule(
 		UNiagaraSystem* NiagaraSystem,

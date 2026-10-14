@@ -129,3 +129,34 @@ Without those arguments, the fixture-dependent tests skip their checks.
 Run the native editor test with the full editor window backend, such as
 `UnrealEditor.exe -RenderOffscreen`, rather than the headless `-NullRHI` backend.
 Tests make their changes on transient copies of the fixture.
+
+### Category checkbox for creation
+
+With **Put in emitter category** checked, both **Create custom User parameter**
+and **Add Set Parameters module** put the new User parameter in the selected
+emitter's category. This also applies to a custom name without an emitter prefix.
+The selected emitter category takes precedence over the optional custom category
+field. With the checkbox unchecked, the custom category field is used as before,
+and Set Parameters does not assign the new User parameter to a category.
+
+### Assignment links
+
+When Add Set Parameters creates a User parameter (`auto` or an explicit User
+name), the module input is linked to it immediately. The link preserves the full
+assignment target namespace, including Emitter or Particles. The native-stack
+regression checks linked mode and the exact User target for all six supported
+types. Leaving the User-link field empty still creates a local assignment.
+
+Expose Selected Input appears at the end of the Niagara System toolbar, after
+Scalability. Its Asset menu entry and Ctrl+Alt+E shortcut remain available.
+
+### Custom types and contextual names
+
+Custom User parameters use the same Float, Vector2D, Vector, Color, Int, and Bool
+selector as Set Parameters. Vector/color defaults preserve every component.
+
+Native exposure uses the owning attribute for nested Color and Scale Curve
+inputs: Color beneath Particles.Color2 becomes EmitterName_Color2, and Color
+beneath Particles.ColorMask becomes EmitterName_ColorMask. Scale Alpha and its
+nested curve scale use EmitterName_Alpha. Existing unrelated User parameters
+are still protected against overwrites; existing names are not renamed.

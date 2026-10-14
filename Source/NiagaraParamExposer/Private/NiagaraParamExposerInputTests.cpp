@@ -1,6 +1,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "NiagaraParamExposerTypedValue.h"
+#include "NiagaraParamExposerNaming.h"
 #include "Editor.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "Framework/Application/SlateApplication.h"
@@ -36,6 +37,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FNPESearchFilterTest, "NiagaraParamExposer.Inpu
 bool FNPESearchFilterTest::RunTest(const FString& Parameters)
 {
  using namespace NiagaraParamExposerInputFilter;
+ using namespace NiagaraParamExposerNaming;
+ TestEqual(TEXT("Nested second color keeps attribute name"), MakeContextualInputName({TEXT("Module.Vector (RGB)"),TEXT("Module.Particles.Color2"),TEXT("Module.Color")}), FString(TEXT("Color2")));
+ TestEqual(TEXT("Nested color mask keeps attribute name"), MakeContextualInputName({TEXT("Module.Particles.ColorMask"),TEXT("Module.Color")}), FString(TEXT("ColorMask")));
+ TestEqual(TEXT("Alpha curve uses Alpha"), MakeContextualInputName({TEXT("Module.Scale Alpha"),TEXT("Module.Scale Curve")}), FString(TEXT("Alpha")));
+ TestEqual(TEXT("Scale Alpha shortened"), MakeAutoUserParameterName(TEXT("Emitter"),TEXT("Scale Alpha")), FString(TEXT("Emitter_Alpha")));
+ TestEqual(TEXT("Unrelated lifetime child retained"), MakeContextualInputName({TEXT("Lifetime"),TEXT("Minimum")}), FString(TEXT("Minimum")));
+
  TestTrue(TEXT("Emitter search ignores case and surrounding spaces"), MatchesEmitterSearch(TEXT("FireAuraFeet"), TEXT(" aura ")));
  TestTrue(TEXT("Empty emitter search shows all"), MatchesEmitterSearch(TEXT("FireAuraFeet"), TEXT("")));
  TestFalse(TEXT("No-match emitter search"), MatchesEmitterSearch(TEXT("FireAuraFeet"), TEXT("arms")));
@@ -109,7 +117,11 @@ bool FNPEActualInputTest::RunTest(const FString& Parameters)
   {
    const FString Name = Input->GetInputParameterHandle().GetName().ToString();
    if (Name == TEXT("Lifetime") && !NiagaraParamExposerInputFilter::IsParticleStateLifetime(Input->GetInputFunctionCallNode(), Name)) LifetimeInput = Input;
-   if (!LocalInput && Input->GetInputType() == FNiagaraTypeDefinition::GetFloatDef() && !Input->IsStaticParameter() && Input->GetIsEnabled() && (!Input->GetHasEditCondition() || Input->GetEditConditionEnabled()) && Input->GetValueMode() == UNiagaraStackFunctionInput::EValueMode::Local && Name != TEXT("Lifetime"))
+   TArray<FString> NamingPath;
+   for (const auto& Part : Input->GetInputParameterHandlePath()) NamingPath.Add(Part.GetParameterHandleString().ToString());
+   const FString Proposed = NiagaraParamExposerNaming::MakeAutoUserParameterName(TEXT("FireAuraFeet"), NiagaraParamExposerNaming::MakeContextualInputName(NamingPath));
+   const bool AlreadyExists = System->GetExposedParameters().IndexOf(FNiagaraVariable(Input->GetInputType(),FName(*(TEXT("User.")+Proposed)))) != INDEX_NONE;
+   if (!LocalInput && !AlreadyExists && Input->GetInputType() == FNiagaraTypeDefinition::GetFloatDef() && !Input->IsStaticParameter() && Input->GetIsEnabled() && (!Input->GetHasEditCondition() || Input->GetEditConditionEnabled()) && Input->GetValueMode() == UNiagaraStackFunctionInput::EValueMode::Local && Name != TEXT("Lifetime"))
     LocalInput = Input;
   }
  }
@@ -144,14 +156,48 @@ bool FNPEActualInputTest::RunTest(const FString& Parameters)
   const FString Name = TEXT("NPETest") + Pair.Key;
   FNiagaraVariable Expected; FString Default;
   TestTrue(TEXT("Typed parser"), NiagaraParamExposerTypedValue::Parse(Pair.Key, Pair.Value, Expected, Default));
+  const FString CustomName=TEXT("CustomTyped")+Pair.Key;
+  auto CustomTyped=NiagaraParamExposerCore::CreateCustomUserParameter(System,CustomName,Pair.Key,Pair.Value,TEXT("FireAuraFeet"),false);
+  TestTrue(*CustomTyped.Message,CustomTyped.bSuccess);
+  const uint8* CustomData=System->GetExposedParameters().GetParameterData(FNiagaraVariable(Expected.GetType(),FName(*(TEXT("User.")+CustomName))));
+  if (TestNotNull(TEXT("Typed custom parameter exists"),CustomData)) TestTrue(TEXT("Custom components preserved"),FMemory::Memcmp(CustomData,Expected.GetData(),Expected.GetSizeInBytes())==0);
   auto Added = NiagaraParamExposerCore::AddTypedSetParameterModule(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn, TEXT("Emitter.")+Name, Pair.Key, Pair.Value, TEXT("auto"), false);
   TestTrue(*Added.Message, Added.bSuccess);
   FNiagaraVariable Lookup(Expected.GetType(), FName(*(TEXT("User.FireAuraFeet_")+Name)));
   const uint8* Data = System->GetExposedParameters().GetParameterData(Lookup);
   if (TestNotNull(TEXT("Typed user parameter exists"), Data)) TestTrue(TEXT("All typed default components preserved"), FMemory::Memcmp(Data, Expected.GetData(), Expected.GetSizeInBytes())==0);
+  TestTrue(TEXT("New module User parameter appears in selected emitter category"),
+   NiagaraParamExposerUserHierarchy::GetCategoryAssignments(*System).Contains(TEXT("FireAuraFeet_")+Name+TEXT("|FireAuraFeet|valid")));
   auto Collision = NiagaraParamExposerCore::AddTypedSetParameterModule(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn, TEXT("Emitter.")+Name, TEXT("Float"), TEXT("99"), TEXT("auto"), false);
   TestFalse(TEXT("Existing user parameter is not overwritten"), Collision.bSuccess);
  }
+ auto Custom = NiagaraParamExposerCore::CreateCustomUserParameter(System, TEXT("UnprefixedCategoryTest"), TEXT("float"), TEXT("3"), TEXT("FireAuraFeet"), false);
+ TestTrue(*Custom.Message, Custom.bSuccess);
+ TestTrue(TEXT("Unprefixed custom parameter goes to selected category"), NiagaraParamExposerUserHierarchy::GetCategoryAssignments(*System).Contains(TEXT("UnprefixedCategoryTest|FireAuraFeet|valid")));
+ auto Ungrouped = NiagaraParamExposerCore::AddTypedSetParameterModule(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn, TEXT("Emitter.UncheckedCategoryTest"), TEXT("Float"), TEXT("5"), TEXT("auto"), false, false);
+ TestTrue(*Ungrouped.Message, Ungrouped.bSuccess);
+ TestFalse(TEXT("Unchecked category leaves new module parameter ungrouped"), NiagaraParamExposerUserHierarchy::GetCategoryAssignments(*System).Contains(TEXT("FireAuraFeet_UncheckedCategoryTest|FireAuraFeet|valid")));
+ // Read the links through Niagara's actual stack input model, not our graph-readback helper.
+ VM->RefreshAll();
+ int32 LinkedAssignments = 0;
+ for (const auto& Emitter : VM->GetEmitterHandleViewModels())
+ {
+  if (Emitter->GetEmitterHandle()->GetName()!=TEXT("FireAuraFeet")) continue;
+  TArray<UNiagaraStackFunctionInput*> Inputs;
+  Emitter->GetEmitterStackViewModel()->GetRootEntry()->GetFilteredChildrenOfType<UNiagaraStackFunctionInput>(Inputs,true);
+  for (auto* Input : Inputs)
+  {
+   if (!Cast<UNiagaraNodeAssignment>(&Input->GetInputFunctionCallNode())) continue;
+   FString Name=Input->GetInputParameterHandle().GetName().ToString();
+   Name.RemoveFromStart(TEXT("Emitter."));
+   if (!Name.StartsWith(TEXT("NPETest"))) continue;
+   ++LinkedAssignments;
+   TestTrue(TEXT("Native assignment input is linked, not local"), Input->GetValueMode()==UNiagaraStackFunctionInput::EValueMode::Linked);
+   if (Input->GetValueMode()==UNiagaraStackFunctionInput::EValueMode::Linked)
+    TestEqual(TEXT("Native assignment points at its created User parameter"), Input->GetLinkedParameterValue().GetName().ToString(), TEXT("User.FireAuraFeet_")+Name);
+  }
+ }
+ TestEqual(TEXT("All six typed assignment links checked in native stack"), LinkedAssignments,6);
  TestFalse(TEXT("Malformed vector rejected"), NiagaraParamExposerCore::AddTypedSetParameterModule(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn, TEXT("Emitter.BadVector"), TEXT("Vector"), TEXT("1,2"), TEXT("auto"), false).bSuccess);
  System->WaitForCompilationComplete();
  return true;

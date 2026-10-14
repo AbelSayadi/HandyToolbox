@@ -13,5 +13,6 @@ namespace NiagaraParamExposerNaming
 	/** Default auto name: EmitterName_ShortToken (PascalCase-ish, no spaces). */
 	FString MakeAutoUserParameterName(const FString& EmitterName, const FString& RawInputName);
 
+	FString MakeContextualInputName(const TArray<FString>& InputPath);
 	void ReloadRulesFromConfig();
 }

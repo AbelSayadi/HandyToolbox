@@ -371,8 +371,14 @@ namespace NiagaraParamExposerNiagaraHelpers
 		const UNiagaraNodeFunctionCall& FunctionCall,
 		const FNiagaraVariable& InputVariable)
 	{
-		const FName LeafName(*GetInputLeafName(InputVariable));
-		const FNiagaraParameterHandle ModuleHandle = FNiagaraParameterHandle::CreateModuleParameterHandle(LeafName);
+        // Assignment modules expose Module.<full target>, e.g. Module.Emitter.Hueshift.
+        // Dropping Emitter/Particles creates a different override that the native input never reads.
+        FString InputName = InputVariable.GetName().ToString();
+        if (Cast<UNiagaraNodeAssignment>(&FunctionCall))
+            InputName.RemoveFromStart(TEXT("Module."));
+        else if (!InputName.RemoveFromStart(TEXT("Module.")))
+            InputName = GetInputLeafName(InputVariable);
+        const FNiagaraParameterHandle ModuleHandle = FNiagaraParameterHandle::CreateModuleParameterHandle(FName(*InputName));
 		return FNiagaraParameterHandle::CreateAliasedModuleParameterHandle(ModuleHandle, &FunctionCall);
 	}
 
