@@ -1,0 +1,13 @@
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+HostProject/
+.vs/
+.idea/
+*.sln
+*.suo
+*.pdb
+*.log
+.env
+.env.*
