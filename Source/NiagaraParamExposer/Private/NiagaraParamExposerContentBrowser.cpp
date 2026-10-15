@@ -43,7 +43,7 @@ static TSharedRef<FExtender> ExtendContentBrowserAssetSelection(const TArray<FAs
 		{
 			MenuBuilder.AddMenuEntry(
 				LOCTEXT("OpenExposer", "Expose Module Inputs..."),
-				LOCTEXT("OpenExposerTooltip", "Open Niagara Param Exposer for this system."),
+				LOCTEXT("OpenExposerTooltip", "Open HandyToolbox Niagara Parameters for this system."),
 				FSlateIcon(),
 				FUIAction(FExecuteAction::CreateLambda([NiagaraSystems]()
 				{

@@ -1,6 +1,10 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "NiagaraParamExposerTypedValue.h"
+#include "NiagaraParamExposerCleanup.h"
+#include "NiagaraEmitter.h"
+#include "NiagaraSpriteRendererProperties.h"
+#include "Materials/MaterialInterface.h"
 #include "NiagaraParamExposerNaming.h"
 #include "Editor.h"
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -259,6 +263,76 @@ bool FNPENativeWindowTest::RunTest(const FString& Parameters)
  TestTrue(TEXT("Expose command registered in actual Niagara toolbar"), Toolbar && Toolbar->FindSection(TEXT("NPEExpose")));
  Editors->CloseAllEditorsForAsset(System);
  System->WaitForCompilationComplete();
+ return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FNPECleanupAssetTest, "NiagaraParamExposer.Cleanup.AssetIntegration", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FNPECleanupAssetTest::RunTest(const FString& Parameters)
+{
+ FString Content, Asset;
+ if (!FParse::Value(FCommandLine::Get(), TEXT("NPETestContent="), Content) || !FParse::Value(FCommandLine::Get(), TEXT("NPETestAsset="), Asset))
+ { AddInfo(TEXT("Supply fixture paths for cleanup integration.")); return true; }
+ FPackageName::RegisterMountPoint(TEXT("/Game/"), Content);
+ auto* Original = LoadObject<UNiagaraSystem>(nullptr, *Asset);
+ if (!TestNotNull(TEXT("Fixture loaded"), Original)) return false;
+ auto* System = DuplicateObject<UNiagaraSystem>(Original, GetTransientPackage());
+ System->SetFlags(RF_Transactional);
+ using namespace NiagaraParamExposerCore;
+ TestTrue(TEXT("Unlinked parameter for live emitter"), CreateCustomUserParameter(System, TEXT("FireAuraFeet_NPEKeep"), TEXT("float"), TEXT("3.25"), TEXT(""), true).bSuccess);
+ TestTrue(TEXT("Unprefixed parameter in live emitter category"), CreateCustomUserParameter(System, TEXT("NPECategoryKeep"), TEXT("float"), TEXT("5.25"), TEXT("FireAuraFeet"), true).bSuccess);
+ TestTrue(TEXT("Orphan fixture"), CreateCustomUserParameter(System, TEXT("NPEDeleted_Unused"), TEXT("color"), TEXT("0.1,0.2,0.3,0.4"), TEXT("NPEDeleted"), true).bSuccess);
+ const int32 ModuleCountBefore = ListModules(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn).Num();
+ auto Linked = AddTypedSetParameterModule(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn, TEXT("Emitter.NPEShared"), TEXT("float"), TEXT("8.25"), TEXT("NPEDeleted_Shared"), true, false);
+ TestTrue(*Linked.Message, Linked.bSuccess);
+ auto Has = [&](const TCHAR* Name, FNiagaraTypeDefinition Type = FNiagaraTypeDefinition::GetFloatDef()) { return (System->GetExposedParameters().IndexOf(FNiagaraVariable(Type, FName(Name))) != INDEX_NONE); };
+ GEditor->UndoTransaction();
+ TestFalse(TEXT("Undo module creation removes new User parameter"), Has(TEXT("User.NPEDeleted_Shared")));
+ TestEqual(TEXT("Undo module creation restores stack count"), ListModules(System, TEXT("FireAuraFeet"), ENiagaraParamExposerScriptUsage::EmitterSpawn).Num(), ModuleCountBefore);
+ GEditor->RedoTransaction();
+ TestTrue(TEXT("Redo module creation restores User parameter"), Has(TEXT("User.NPEDeleted_Shared")));
+ FNiagaraEmitterHandle* Feet = System->GetEmitterHandles().FindByPredicate([](const FNiagaraEmitterHandle& Handle) { return Handle.GetName() == FName(TEXT("FireAuraFeet")); });
+ if (!TestNotNull(TEXT("Live fixture emitter"), Feet)) return false;
+ Feet->SetIsEnabled(false, *System, false);
+ FNiagaraVariable Material(FNiagaraTypeDefinition(UMaterialInterface::StaticClass()), TEXT("User.NPEMaterialBinding"));
+ System->GetExposedParameters().AddParameter(Material);
+ auto* Renderer = NewObject<UNiagaraSpriteRendererProperties>(Feet->GetInstance().Emitter);
+ Renderer->MaterialUserParamBinding.Parameter = Material;
+ Feet->GetInstance().Emitter->AddRenderer(Renderer, Feet->GetInstance().Version);
+ auto Result = NiagaraParamExposerCleanup::Cleanup(System);
+ TestTrue(*Result.Message, Result.bSuccess);
+ TestTrue(TEXT("Renderer-only binding protected"), Has(TEXT("User.NPEMaterialBinding"), Material.GetType()));
+ TestTrue(TEXT("Live emitter unlinked parameter protected"), Has(TEXT("User.FireAuraFeet_NPEKeep")));
+ TestTrue(TEXT("Live emitter custom category protected"), Has(TEXT("User.NPECategoryKeep")));
+ TestTrue(TEXT("Reference from remaining emitter protects old-prefix parameter"), Has(TEXT("User.NPEDeleted_Shared")));
+ TestFalse(TEXT("Unused color removed"), Has(TEXT("User.NPEDeleted_Unused"), FNiagaraTypeDefinition::GetColorDef()));
+ TestFalse(TEXT("Newly empty category removed"), ListUserParameterCategories(System).Contains(TEXT("NPEDeleted")));
+ GEditor->UndoTransaction();
+ TestTrue(TEXT("Undo restores color type"), Has(TEXT("User.NPEDeleted_Unused"), FNiagaraTypeDefinition::GetColorDef()));
+ TestTrue(TEXT("Undo restores removed category"), ListUserParameterCategories(System).Contains(TEXT("NPEDeleted")));
+ GEditor->RedoTransaction();
+ TestFalse(TEXT("Redo removes color"), Has(TEXT("User.NPEDeleted_Unused"), FNiagaraTypeDefinition::GetColorDef()));
+ const FNiagaraEmitterHandle RemovedHandle = *Feet;
+ System->RemoveEmitterHandle(RemovedHandle);
+ TestTrue(TEXT("Cleanup after emitter deletion"), NiagaraParamExposerCleanup::Cleanup(System).bSuccess);
+ TestFalse(TEXT("Deleted emitter prefix no longer protects unused parameter"), Has(TEXT("User.FireAuraFeet_NPEKeep")));
+ TestFalse(TEXT("Removed emitter category no longer protects unreferenced custom parameter"), Has(TEXT("User.NPECategoryKeep")));
+ TestFalse(TEXT("Deleted emitter graph does not keep its old links alive"), Has(TEXT("User.NPEDeleted_Shared")));
+ TestFalse(TEXT("Deleted renderer binding is no longer a reference"), Has(TEXT("User.NPEMaterialBinding"), Material.GetType()));
+ TestTrue(TEXT("Create action for undo"), CreateCustomUserParameter(System, TEXT("NPEUndoCustom"), TEXT("float"), TEXT("6.5"), TEXT("UndoCategory"), true).bSuccess);
+ GEditor->UndoTransaction();
+ TestFalse(TEXT("Undo custom creation"), Has(TEXT("User.NPEUndoCustom")));
+ GEditor->RedoTransaction();
+ TestTrue(TEXT("Redo custom creation"), Has(TEXT("User.NPEUndoCustom")));
+ if (!System->GetEmitterHandles().IsEmpty())
+ {
+     const FString OldName = System->GetEmitterHandles()[0].GetName().ToString();
+     TestTrue(TEXT("Rename action"), RenameEmitter(System, OldName, TEXT("NPEUndoRename"), true).bSuccess);
+     TestEqual(TEXT("Emitter actually renamed"), System->GetEmitterHandles()[0].GetName(), FName(TEXT("NPEUndoRename")));
+     GEditor->UndoTransaction();
+     TestEqual(TEXT("Undo emitter rename"), System->GetEmitterHandles()[0].GetName(), FName(*OldName));
+     GEditor->RedoTransaction();
+     TestEqual(TEXT("Redo emitter rename"), System->GetEmitterHandles()[0].GetName(), FName(TEXT("NPEUndoRename")));
+ }
  return true;
 }
 #endif

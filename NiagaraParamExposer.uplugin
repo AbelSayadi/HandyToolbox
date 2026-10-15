@@ -1,33 +1,33 @@
 {
-	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "2.0.0",
-	"FriendlyName": "Niagara Param Exposer",
-	"Description": "Editor tools to expose Niagara module stack inputs as User Parameters (Python/Blueprint API + Content Browser UI).",
-	"Category": "FX",
-	"CreatedBy": "NiagaraParamExposer",
-	"CreatedByURL": "",
-	"DocsURL": "",
-	"MarketplaceURL": "",
-	"SupportURL": "",
-	"CanContainContent": false,
-	"IsBetaVersion": false,
-	"IsExperimentalVersion": false,
-	"Installed": false,
-	"Plugins": [
-		{
-			"Name": "Niagara",
-			"Enabled": true
-		}
-	],
-	"Modules": [
-		{
-			"Name": "NiagaraParamExposer",
-			"Type": "Editor",
-			"LoadingPhase": "Default",
-			"PlatformAllowList": [
-				"Win64"
-			]
-		}
-	]
+  "FileVersion": 3,
+  "Version": 4,
+  "VersionName": "2.3.0",
+  "FriendlyName": "HandyToolbox",
+  "Description": "HandyToolbox editor tools for Niagara parameters, asset cleanup, reference checking, and naming conventions.",
+  "Category": "FX",
+  "CreatedBy": "NiagaraParamExposer",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "",
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "IsExperimentalVersion": false,
+  "Installed": false,
+  "Plugins": [
+    {
+      "Name": "Niagara",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "NiagaraParamExposer",
+      "Type": "Editor",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [
+        "Win64"
+      ]
+    }
+  ]
 }

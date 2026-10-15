@@ -1,8 +1,17 @@
 // Copyright NiagaraParamExposer. All Rights Reserved.
 
 #include "NiagaraParamExposerEditorTab.h"
+#include "HandyReferenceChecker.h"
+#include "HandyNaming.h"
+#include "HandyBatchParameters.h"
 
 #include "NiagaraParamExposerCore.h"
+#include "NiagaraParamExposerCleanup.h"
+#include "HandyAssetCleanup.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/Layout/SBox.h"
+#include "Editor.h"
+#include "Editor/TransBuffer.h"
 #include "NiagaraParamExposerLibrary.h"
 #include "NiagaraParamExposerInputFilter.h"
 #include "NiagaraParamExposerNaming.h"
@@ -71,8 +80,23 @@ public:
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(6)
 			[
-				SNew(STextBlock).Text(LOCTEXT("Title", "Niagara Param Exposer"))
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+                [
+                    SNew(STextBlock).Text(LOCTEXT("Title", "Niagara Param Exposer"))
+                    .Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+                    .ColorAndOpacity(FLinearColor(0.68f, 0.79f, 0.88f))
+                ]
+                + SHorizontalBox::Slot().AutoWidth().Padding(6, 0)
+                [SNew(SButton).Text(LOCTEXT("UndoAction", "Undo"))
+                    .ToolTipText(LOCTEXT("UndoActionTip", "Undo the latest Unreal Editor action, including every plugin edit. Uses the same history as Ctrl+Z."))
+                    .IsEnabled_Lambda([]() { return GEditor && GEditor->Trans && GEditor->Trans->CanUndo(); })
+                    .OnClicked_Lambda([this]() { GEditor->UndoTransaction(); RefreshEmitters(); AppendLog(TEXT("Undid the latest editor action.")); return FReply::Handled(); })]
+                + SHorizontalBox::Slot().AutoWidth()
+                [SNew(SButton).Text(LOCTEXT("RedoAction", "Redo"))
+                    .ToolTipText(LOCTEXT("RedoActionTip", "Redo the latest undone editor action, including every plugin edit."))
+                    .IsEnabled_Lambda([]() { return GEditor && GEditor->Trans && GEditor->Trans->CanRedo(); })
+                    .OnClicked_Lambda([this]() { GEditor->RedoTransaction(); RefreshEmitters(); AppendLog(TEXT("Redid the latest editor action.")); return FReply::Handled(); })]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(6)
 			[
@@ -160,11 +184,14 @@ public:
 			+ SVerticalBox::Slot().AutoHeight().Padding(6)
 			[
 				SNew(SButton).Text(LOCTEXT("ExposeSelected", "Expose Selected Inputs"))
+                    .ButtonColorAndOpacity(FLinearColor(0.14f, 0.23f, 0.30f))
+                    .ForegroundColor(FLinearColor(0.86f, 0.92f, 0.97f))
 				.OnClicked(this, &SNiagaraParamExposerEditorTab::OnExposeSelected)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(6)
 			[
 				SNew(SButton).Text(LOCTEXT("RepairCategories", "Repair Emitter Categories"))
+                    .ButtonColorAndOpacity(FLinearColor(0.19f, 0.23f, 0.24f))
 				.ToolTipText(LOCTEXT("RepairCategoriesTip", "Group all existing parameters by their emitter-name prefix, preserving values and links."))
 				.OnClicked_Lambda([this]()
 				{
@@ -173,6 +200,7 @@ public:
 					return FReply::Handled();
 				})
 			]
+
 			+ SVerticalBox::Slot().AutoHeight().Padding(6)
 			[
 				SNew(SExpandableArea).AreaTitle(LOCTEXT("CreateParam", "Create custom User parameter"))
@@ -199,6 +227,8 @@ public:
 					+ SVerticalBox::Slot().AutoHeight().Padding(2)
 					[
 						SNew(SButton).Text(LOCTEXT("CreateParamBtn", "Create parameter"))
+                    .ButtonColorAndOpacity(FLinearColor(0.14f, 0.23f, 0.30f))
+                    .ForegroundColor(FLinearColor(0.86f, 0.92f, 0.97f))
 						.OnClicked(this, &SNiagaraParamExposerEditorTab::OnCreateParameter)
 					]
 				]
@@ -242,6 +272,8 @@ public:
 					+ SVerticalBox::Slot().AutoHeight().Padding(2)
 					[
 						SNew(SButton).Text(LOCTEXT("AddSetParam", "Add Set Parameters module"))
+                    .ButtonColorAndOpacity(FLinearColor(0.14f, 0.23f, 0.30f))
+                    .ForegroundColor(FLinearColor(0.86f, 0.92f, 0.97f))
 						.OnClicked(this, &SNiagaraParamExposerEditorTab::OnAddSetParameterModule)
 					]
 				]
@@ -255,8 +287,18 @@ public:
 				SAssignNew(LogBox, SMultiLineEditableTextBox)
 				.IsReadOnly(true)
 				.AutoWrapText(true)
-			]
-		];
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(6, 2, 6, 8)
+            [
+                SNew(SButton).Text(LOCTEXT("CleanupUnused", "Clean Up Unused User Parameters"))
+                .ButtonColorAndOpacity(FLinearColor(0.24f, 0.19f, 0.12f))
+                .ForegroundColor(FLinearColor(0.91f, 0.83f, 0.68f))
+                .ContentPadding(FMargin(10, 5))
+                .ToolTipText(LOCTEXT("CleanupUnusedTip", "Remove unreferenced User parameters. Protects existing emitter names/categories and references, including disabled emitters. Removes newly empty categories and preserves remaining order. Undo restores the cleanup."))
+                .OnClicked_Lambda([this]() { AppendLog(NiagaraParamExposerCleanup::Cleanup(WeakSystem.Get()).Message); RefreshInputRows(); return FReply::Handled(); })
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(8,4)[HandyBatchParameters::MakePanel()]
+        ];
 
 		StageOptions.Add(MakeShared<FString>(TEXT("Emitter Spawn")));
 		StageOptions.Add(MakeShared<FString>(TEXT("Emitter Update")));
@@ -772,13 +814,50 @@ private:
 	}
 };
 
+class SHandyToolbox : public SCompoundWidget
+{
+public:
+    SLATE_BEGIN_ARGS(SHandyToolbox) {} SLATE_END_ARGS()
+    void Construct(const FArguments&)
+    {
+        ChildSlot
+        [SNew(SHorizontalBox)
+            + SHorizontalBox::Slot().AutoWidth().Padding(6)
+            [SNew(SBox).WidthOverride(155)
+                [SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().Padding(6,8)
+                    [SNew(STextBlock).Text(LOCTEXT("ToolboxBrand", "HandyToolbox")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 13)).ColorAndOpacity(FLinearColor(.68f,.79f,.88f))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(0, LOCTEXT("ParametersNav", "Niagara Parameters"))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(1, LOCTEXT("CleanupNav", "Asset Cleanup"))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(2, LOCTEXT("ReferencesNav", "Reference Checker"))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(3, LOCTEXT("NamingNav", "Naming Convention"))]
+                ]]
+            + SHorizontalBox::Slot().FillWidth(1)
+            [SAssignNew(Pages, SWidgetSwitcher)
+                + SWidgetSwitcher::Slot()[SNew(SNiagaraParamExposerEditorTab)]
+                + SWidgetSwitcher::Slot()[HandyAssetCleanup::MakePanel()]
+                + SWidgetSwitcher::Slot()[HandyReferences::MakePanel()]
+                + SWidgetSwitcher::Slot()[HandyNaming::MakePanel()]
+            ]
+        ];
+    }
+private:
+    TSharedPtr<SWidgetSwitcher> Pages;
+    int32 Active = 0;
+    TSharedRef<SWidget> MakeNavigation(int32 Index, FText Label)
+    {
+        return SNew(SButton).Text(Label).ContentPadding(FMargin(8,10))
+            .ButtonColorAndOpacity_Lambda([this, Index]() { return Active == Index ? FLinearColor(.14f,.23f,.30f) : FLinearColor(.14f,.14f,.14f); })
+            .OnClicked_Lambda([this, Index]() { Active = Index; Pages->SetActiveWidgetIndex(Index); return FReply::Handled(); });
+    }
+};
 static TSharedRef<SDockTab> SpawnNiagaraParamExposerEditorTab(const FSpawnTabArgs& Args)
 {
-	return SNew(SDockTab)
-		.TabRole(ETabRole::NomadTab)
-		[
-			SNew(SNiagaraParamExposerEditorTab)
-		];
+    return SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(SHandyToolbox)];
 }
 
 void NiagaraParamExposer_RegisterEditorTab()
@@ -786,7 +865,7 @@ void NiagaraParamExposer_RegisterEditorTab()
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
 		NiagaraParamExposerEditorTabId,
 		FOnSpawnTab::CreateStatic(&SpawnNiagaraParamExposerEditorTab))
-		.SetDisplayName(LOCTEXT("TabTitle", "Niagara Param Exposer"))
+		.SetDisplayName(LOCTEXT("TabTitle", "HandyToolbox"))
 		.SetMenuType(ETabSpawnerMenuType::Enabled);
 
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateLambda([]()
@@ -795,8 +874,8 @@ void NiagaraParamExposer_RegisterEditorTab()
 		FToolMenuSection& Section = Menu->FindOrAddSection("NiagaraParamExposer");
 		Section.AddMenuEntry(
 			"OpenNiagaraParamExposer",
-			LOCTEXT("MenuLabel", "Niagara Param Exposer"),
-			LOCTEXT("MenuTooltip", "Open the Niagara Param Exposer editor tab."),
+			LOCTEXT("MenuLabel", "HandyToolbox"),
+			LOCTEXT("MenuTooltip", "Open HandyToolbox: Niagara parameters and asset cleanup."),
 			FSlateIcon(),
 			FUIAction(FExecuteAction::CreateLambda([]()
 			{

@@ -284,6 +284,7 @@ namespace NiagaraParamExposerCore
 			{
 				return;
 			}
+			SystemEditorData->Modify();
 
 			FNiagaraVariable UserLookup(UserVariable);
 			FNiagaraUserRedirectionParameterStore::MakeUserVariable(UserLookup);
@@ -340,6 +341,7 @@ namespace NiagaraParamExposerCore
 			FNiagaraVariable UserLookup = UserVariable;
 			FNiagaraUserRedirectionParameterStore::MakeUserVariable(UserLookup);
 
+			SystemEditorData->Modify();
 			UNiagaraScriptVariable* ScriptVar = SystemEditorData->FindOrAddUserScriptVariable(UserLookup, *System);
 			if (!ScriptVar)
 			{
@@ -1216,7 +1218,7 @@ namespace NiagaraParamExposerCore
 		const int32 EmitterCount = NiagaraSystem->GetNumEmitters();
 		for (int32 EmitterIndex = 0; EmitterIndex < EmitterCount; ++EmitterIndex)
 		{
-			FNiagaraEmitterHandle Handle = NiagaraSystem->GetEmitterHandle(EmitterIndex);
+			FNiagaraEmitterHandle& Handle = NiagaraSystem->GetEmitterHandle(EmitterIndex);
 			if (!Handle.GetName().ToString().Equals(OldName, ESearchCase::IgnoreCase))
 			{
 				continue;

@@ -1,2 +1,2 @@
-0f2e164c54f480aa9780008d106d8cb6f583b52338ea019ea8b258d0fac72393  NiagaraParamExposer-UE5.6.1-Win64.zip
-16b005e46002b399b264b3b48f9d1c2549beda58d3d29842620c6d56a4d29efd  NiagaraParamExposer-UE5.8.3-Win64.zip
+b397e9a6be600b01f4b773a4a603c46b26922aa54effe1ea0373cd0ea548f7c9  NiagaraParamExposer-UE5.6.1-Win64.zip
+cb06b2388b74b236c856146114f40aa4c21fd800edff865c090c3dfa6241bd28  NiagaraParamExposer-UE5.8.3-Win64.zip

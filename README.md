@@ -1,4 +1,4 @@
-# NiagaraParamExposer (Unreal Engine Editor Plugin)
+# HandyToolbox (Unreal Engine Editor Plugin)
 
 Editor plugin tested on **Unreal Engine 5.6.1 and 5.8.3** (Win64) that exposes Niagara module stack inputs as **User Parameters**, with a **full editor tab UI**, Python/Blueprint API, and Content Browser shortcuts.
 
@@ -163,8 +163,98 @@ are still protected against overwrites; existing names are not renamed.
 
 ## Engine versions
 
-See [COMPATIBILITY.md](COMPATIBILITY.md) for verified engine versions, separate binary builds, and the UEFN asset workflow. Unreal 5.8.3 now passes all four regression suites. Unreal 5.7 remains unverified.
+See [COMPATIBILITY.md](COMPATIBILITY.md) for verified engine versions, separate binary builds, and the UEFN asset workflow. Unreal 5.8.3 now passes all nine regression suites. Unreal 5.7 remains unverified.
 
 ## Download prebuilt packages
 
 Ready-to-copy Windows packages for Unreal 5.6.1 and 5.8.3 are in [Packages](Packages/README.md). Each includes installation instructions.
+
+### Cleanup and Undo / Redo
+
+**Clean Up Unused User Parameters** removes unreferenced User parameters from
+this system. It protects parameters whose names start with an existing emitter
+name and parameters grouped under an existing emitter category, even if unlinked.
+It scans remaining emitter/system graphs, nested inputs and renderer/data-interface
+bindings, including disabled emitters. A shared parameter stays when another
+emitter references it. Ambiguous substring references are kept conservatively.
+
+Cleanup removes the deleted parameters' hierarchy entries. It removes categories made empty by this cleanup. It does not run
+category repair or sort remaining entries. The panel log
+lists removed names. The asset is marked modified but is never saved automatically.
+References outside the Niagara System (such as Blueprint-only controls) are not
+part of this system-local usage check.
+
+**Undo** and **Redo** use Unreal Editor's shared transaction history (Ctrl+Z / redo),
+including cleanup, exposure, custom creation, module creation, emitter rename and
+category repair. Undo restores the cleanup as one action, including parameter
+values, types and hierarchy positions. These buttons act on the latest editor
+action; they do not skip intervening edits in other editor windows.
+
+The panel header contains Undo/Redo for all editor actions. Cleanup sits at the very bottom below the log. Editing buttons use a muted blue accent; cleanup uses muted amber.
+
+## HandyToolbox: Asset Cleanup
+
+Open Tools > HandyToolbox. Vertical navigation keeps Niagara Parameters and Asset
+Cleanup in separate pages. The internal plugin/module ID remains NiagaraParamExposer
+so existing project configuration and scripting calls continue to work.
+
+Select folders in the Content Browser, click Use Selected Folders, then Scan.
+Only selected project Content (/Game) folders are eligible for deletion. Engine
+and plugin content, Niagara Systems, emitters, and other unsupported asset types
+are never deletion candidates. Supported types are materials/material instances,
+material functions, textures, static meshes and skeletal meshes.
+
+The scanner follows saved hard/soft/package/management dependencies from every
+Niagara System found by the Asset Registry. It also protects anything referenced
+by retained project content, including referencers outside the selected folders.
+An isolated unused material and its otherwise unused textures can be selected
+as a group. A shared texture stays protected. Unselected assets are protected
+again when checking the requested deletion subset.
+
+Unsaved content or maps block scans: save or discard changes yourself first.
+The tool never auto-saves. Review the paths and reasons, select candidates, then
+choose Review and Delete Selected. References are rescanned; changed or unsafe
+selections are rejected. A warning and Unreal's standard deletion dialog precede
+any file deletion. No force-delete API is used. Asset deletion is not covered by
+the Niagara parameter Undo/Redo controls. Keep source control or backups. Code,
+configuration and string-based runtime loads may not appear in the Asset Registry.
+
+Parameter cleanup now removes categories made empty by deleting their last
+parameter, including newly empty parent categories. It preserves the order of
+remaining categories and parameters. Undo restores the removed categories too.
+
+Asset Cleanup uses resizable Asset Name, Type, Keep / Remove, Directory and Reason columns. Blue KEEP rows are protected; amber REMOVE rows are eligible, and only checked rows are submitted for deletion. Hover truncated cells for full details. Search also matches readable asset types.
+
+## Reference Checker (HandyToolbox 2.2)
+
+Open Tools > HandyToolbox > Reference Checker. Select one project Content folder,
+click Use Selected Folder, save/discard pending edits, then Scan References.
+The table lists outgoing package dependencies, including chains through outside
+assets. Amber rows leave the selected folder; /Engine and /Niagara are allowed.
+Hover cells for full paths. Details identify material expression objects and
+properties, material-instance texture parameter names, and Niagara emitter names
+when the serialized reference can be resolved. Unresolved package/soft references
+are explicitly marked for manual review; arbitrary path strings in code/config
+cannot be discovered by an asset dependency scan.
+
+Select Verified Matches and Relink Selected presents a confirmation with each
+source, old reference, and replacement. Only referring assets inside the chosen
+folder change. External originals are not deleted, and nothing is automatically
+saved. Undo/Redo use the editor transaction history. Review, save, and rescan.
+
+Duplicate matching is deliberately conservative: ordinary Texture2D assets need
+identical source mip pixels and persistent settings; native materials, constant
+material instances and material functions need matching authoring data, owned
+objects and external dependencies. Asset names are not evidence of equality.
+Multiple matches, meshes, other texture types, custom classes and unverified
+material graphs require manual review. Differences in dependency paths can
+prevent a match even where the rendered appearance looks the same. The checker
+is not a guarantee of marketplace compliance or runtime string-reference closure.
+
+## HandyToolbox 2.3: batch tools and naming
+
+Reference Checker shows External references highlighted by default. Local and Engine / Niagara allowed references are collapsed and expandable. Multiple selected folders remain independent scopes: an asset in another selected folder is still external. Add Selected Assets supports individual assets as well.
+
+Asset Cleanup accepts multiple folders and individual assets while protecting references from retained project content. Niagara Parameters includes a collapsed Batch unused-parameter cleanup section: select folders or Niagara systems, preview, then clean the batch. One Undo restores the entire batch, including removed empty categories. Normal parameter editing remains focused on one system.
+
+Naming Convention is the fourth vertical tab. Select folders or assets, edit the enabled type/prefix/suffix rules, save rules per project, and Preview Names. Defaults include MI_, M_, MF_, T_, NS_, SM_, CC_, CA_, NM_, plus other common types. Conflicting names are skipped. Rename and Fix Redirectors uses Unreal's native rename manager and may save referring packages outside the selected folders. Review Unreal's redirector report if shown; unresolved redirectors are retained. Revert Last Rename reverses the last successful batch in the current session; it is separate from ordinary editor Undo. Save other pending content before renaming. Text paths in code/configuration are not guaranteed to update automatically.

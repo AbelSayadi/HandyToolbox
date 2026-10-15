@@ -1,9 +1,9 @@
 # Engine compatibility
 
-Checked on 2026-10-14, Windows x64.
+Checked on 2026-10-15, Windows x64.
 
-- Unreal 5.8.3: packaged successfully and all four automation suites passed.
-- Unreal 5.6.1: final compatibility source packaged successfully and all four automation suites passed again.
+- Unreal 5.8.3: packaged successfully and all nine automation suites passed.
+- Unreal 5.6.1: final compatibility source packaged successfully and all nine automation suites passed again.
 - Unreal 5.7: not verified. No 5.7 installation was available. Passing on 5.6 and 5.8 is not a substitute for a 5.7 build and native-editor test.
 - UEFN: this native C++ editor plugin is not offered as a UEFN plugin. The checked Fortnite/UEFN installation does not provide the engine build SDK needed for this module. Do not copy an UnrealEditor DLL into UEFN and assume compatibility.
 
@@ -26,6 +26,7 @@ Run the full editor with -RenderOffscreen -unattended and these automation argum
 
 ```text
 -ExecCmds="Automation RunTests NiagaraParamExposer"
+-HandyCleanupFixtures
 -TestExit="Automation Test Queue Empty"
 -NPETestContent=<fixture-project-content-directory>/
 -NPETestAsset=/Game/FireAura/Particles/NS_FireAura_Emitters
@@ -33,7 +34,7 @@ Run the full editor with -RenderOffscreen -unattended and these automation argum
 ```
 
 Require Success for Categories.Regression, Inputs.AssetIntegration,
-Inputs.NativeEditor, and Inputs.SearchAndLifetime. The fixture-dependent tests
+Inputs.NativeEditor, Inputs.SearchAndLifetime, Cleanup.Regression, Cleanup.AssetIntegration, AssetCleanup.Dependencies, AssetCleanup.Navigation, and AssetCleanup.Registry. The fixture-dependent tests
 skip when fixture arguments are missing, so an empty-project run alone does not
 verify full compatibility. Check the log results, not just the editor exit code.
 The native-window test requires the full window backend, not -NullRHI.
@@ -57,3 +58,17 @@ versions. Confirm the destination's supported asset version before choosing a
 source engine. Migration compatibility has not been tested on a UEFN project here.
 
 Reference: https://dev.epicgames.com/documentation/fortnite/migrating-assets-from-unreal-engine-to-unreal-editor-for-fortnite
+
+Cleanup tests cover exact hierarchy order, restored types/values, shared references, disabled emitters, renderer-only bindings, emitter deletion, and module/custom creation and emitter rename undo.
+
+Run -HandyCleanupFixtures only in an isolated test project: it creates saved test assets there to verify the Asset Registry dependency scan. It never invokes deletion. AssetCleanup.Navigation opens both HandyToolbox pages. Parameter cleanup tests include removal and undo restoration of newly empty categories.
+
+HandyToolbox 2.2 adds References.IdentityAndUndo and a third navigation page.
+The reference tests exercise saved dependency inspection, material parameter detail,
+engine exceptions, exact texture pixels/settings, renamed material graphs, material
+instance differences, scoped replacement and Undo/Redo. They use a dedicated fixture
+mount inside the temporary test project and do not save any original project assets.
+Automatic duplicate matching excludes unsupported/custom asset payloads; unresolved
+soft/package references remain manual-review rows.
+
+HandyToolbox 2.3 adds Naming.Rules, Naming.RenameAndRedirectors, and Cleanup.BatchUndo. Naming fixtures require -HandyNamingFixtures in an isolated project; they verify saved external material references survive rename and revert. Reference tests also cover independent folder scopes and default collapsed local/allowed sections. Native rename handles asset references, but arbitrary text paths in code/configuration still require review.
