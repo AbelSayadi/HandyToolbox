@@ -2,9 +2,9 @@
 
 Checked on 2026-10-16, Windows x64.
 
-- Unreal 5.8.3: packaged successfully and all 19 automation tests passed.
-- Unreal 5.6.1: final compatibility source packaged successfully and all 19 automation tests passed again.
-- Unreal 5.7.4: built against the installed 5.7.4 SDK and all 19 automation tests passed in an isolated editor project, including actual MP4 encoding, fixed EV100, fade-out frame counts, and cancellation.
+- Unreal 5.8.3: packaged successfully and all 21 automation tests passed.
+- Unreal 5.6.1: final compatibility source packaged successfully and all 21 automation tests passed again.
+- Unreal 5.7.4: built against the installed 5.7.4 SDK and all 21 automation tests passed in an isolated editor project, including actual MP4 encoding, fixed EV100, fade-out frame counts, and cancellation.
 - UEFN: this native C++ editor plugin is not offered as a UEFN plugin. The checked Fortnite/UEFN installation does not provide the engine build SDK needed for this module. Do not copy an UnrealEditor DLL into UEFN and assume compatibility.
 
 ## Cross-version fixes
@@ -26,7 +26,7 @@ Run the full editor with -RenderOffscreen -unattended and these automation argum
 
 ```text
 -ExecCmds="Automation RunTests NiagaraParamExposer"
--HandyCleanupFixtures -HandyNamingFixtures -HandyRenderFixtures
+-HandyCleanupFixtures -HandyNamingFixtures -HandyRenderFixtures -HandySanityFixtures
 -TestExit="Automation Test Queue Empty"
 -NPETestContent=<fixture-project-content-directory>/
 -NPETestAsset=/Game/FireAura/Particles/NS_FireAura_Emitters
@@ -84,3 +84,12 @@ HandyToolbox 2.6 extends the presentation and recording tests to cover unkeyed S
 The 2.6 final builds passed 19/19 automation tests on UE 5.6.1 and UE 5.8.3, including actual MP4 rendering with fixed exposure and additional fade-out frames.
 
 UE 5.7.4 verification required no source compatibility changes. Its Win64 DLL is packaged separately; use the matching ZIP rather than a 5.6 or 5.8 binary. See Verification/UE5.7.4-Win64.json for the test result summary.
+
+
+## Pack Sanity Check 2.7
+
+Sanity.Thresholds verifies 2K warnings, configurable thresholds, rectangular power-of-two acceptance, non-power-of-two warnings and triangle limits. Sanity.SavedPack uses saved assets in an isolated project to verify independent folder scopes, external references and local matches, naming, duplicates, unused-content protection, texture dimensions, actual static-mesh geometry, missing material parents, and unchanged references/package dirty state. The navigation regression includes the new sixth tab.
+
+Run -HandySanityFixtures only in an isolated test project. The test temporarily restores that project's /Game mount because earlier integration tests mount source content for reading; it verifies fixture paths before saving. Test projects disable r.CEFGPUAcceleration to avoid an offscreen CEF renderer assertion in UE 5.7. This setting is not installed in user projects or plugin packages.
+
+The scanner uses the public skeletal mesh rendering-resource API across engine versions. Compile results are cached and feature-level-specific; this is not full cook/platform validation. Texture and triangle thresholds are review warnings, not measured performance guarantees.

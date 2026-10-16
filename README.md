@@ -291,3 +291,17 @@ In Presentation, turn **Add Spawned on/off keys** off and click **Build / Update
 In Record MP4 Clips, **Fade-out seconds** adds recording time after each slot without moving the next effect or extending its activation. Turn Spawned keys off to capture natural tails. Other presentation VFX are removed from each recording copy, including effects whose slots would overlap the tail. Existing camera cuts must cover the additional tail, or use a selected camera. Mesh animation must also cover the time you want to record.
 
 Exposure defaults to **Match viewport exposure**. Focus your perspective level viewport before recording: its fixed EV100 override is captured when the batch starts. If the viewport uses Game Settings, recording follows camera/scene exposure. **Fixed EV100** lets you enter an explicit value; **Camera / scene exposure** deliberately uses the original scene settings. Fixed EV100 uses the same renderer exposure override as the viewport, without modifying camera assets, post-process volumes, global exposure variables, or the source sequence.
+
+
+## Pack Sanity Check (2.7)
+
+Open the new **Pack Sanity Check** tab, choose Content Browser folders or add individual assets, then run the scan. Each selected folder is checked independently; selecting two packs does not make references between them local. Save content first.
+
+The read-only report checks external and missing dependencies, naming against your saved Naming Convention rules, redirectors, cached Niagara/material compile results, unused-content candidates protected by project references, and verified duplicates. Engine and Niagara references are allowed. Open a finding's asset, related asset, or existing repair tool; the scan itself never renames, relinks, deletes, or changes settings.
+
+- **Textures:** warn at 2048 pixels or larger on either axis by default; flag non-power-of-two dimensions. Rectangular power-of-two textures are allowed.
+- **Meshes:** warn above 20,000 LOD0 triangles by default, for static and skeletal meshes.
+- Both limits are editable and saved per project. These are review thresholds, not measured performance limits. Large flipbook atlases can be intentional.
+- Select a non-error finding and enter a reason to **Mark Reviewed**. Review notes persist per project and can be reset. Errors cannot be dismissed. Use **Copy Report** to copy results and notes.
+
+Compile checks inspect available cached results for the current editor feature level; they are not a full cook or platform validation. Duplicate verification covers native Texture2D, materials, material instances and material functions, not arbitrary asset classes. Missing/dependency and unused checks use saved references; arbitrary runtime loads from code or strings require manual review. Pending, canceled, and incomplete checks are reported, and a clean report is not a guarantee of marketplace or UEFN acceptance.

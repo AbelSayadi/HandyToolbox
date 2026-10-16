@@ -4,6 +4,7 @@
 #include "HandyReferenceChecker.h"
 #include "HandyNaming.h"
 #include "HandyPresentation.h"
+#include "HandyPackSanity.h"
 #include "HandyBatchParameters.h"
 
 #include "NiagaraParamExposerCore.h"
@@ -838,6 +839,8 @@ public:
                     [MakeNavigation(3, LOCTEXT("NamingNav", "Naming Convention"))]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,4)
                     [MakeNavigation(4, LOCTEXT("PresentationNav", "Presentation"))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(5, LOCTEXT("PackSanityNav", "Pack Sanity Check"))]
                 ]]
             + SHorizontalBox::Slot().FillWidth(1)
             [SAssignNew(Pages, SWidgetSwitcher)
@@ -846,6 +849,7 @@ public:
                 + SWidgetSwitcher::Slot()[HandyReferences::MakePanel()]
                 + SWidgetSwitcher::Slot()[HandyNaming::MakePanel()]
                 + SWidgetSwitcher::Slot()[HandyPresentation::MakePanel()]
+                + SWidgetSwitcher::Slot()[HandySanity::MakePanel([this](int32 Index){Active=Index;Pages->SetActiveWidgetIndex(Index);})]
             ]
         ];
     }

@@ -43,6 +43,7 @@ public class NiagaraParamExposer : ModuleRules
 				"Kismet",
 				"Projects",
 				"ApplicationCore",
+                "RHI", // Pack Sanity Check: current shader feature level.
 			});
 
 		if (Target.bBuildEditor)

@@ -87,6 +87,9 @@ bool FHandyPanelTest::RunTest(const FString&)
     TestTrue(TEXT("Presentation clear present"), Labels.Contains(TEXT("Clear Generated Tracks")));
     TestTrue(TEXT("Recording action in Presentation"), Labels.Contains(TEXT("Record Individual MP4 Clips")));
     TestTrue(TEXT("Recording cancellation present"), Labels.Contains(TEXT("Cancel Recording")));
+    Pages->SetActiveWidgetIndex(5); Labels.Reset(); Visit(Tab->GetContent());
+    TestTrue(TEXT("Pack sanity scan present"), Labels.Contains(TEXT("Run Pack Sanity Check")));
+    TestTrue(TEXT("Pack sanity review present"), Labels.Contains(TEXT("Mark Reviewed")));
     Pages->SetActiveWidgetIndex(0); Labels.Reset(); Visit(Tab->GetContent());
     TestTrue(TEXT("Parameter cleanup retained"), Labels.Contains(TEXT("Clean Up Unused User Parameters")));
     TestTrue(TEXT("Undo retained"), Labels.Contains(TEXT("Undo")));

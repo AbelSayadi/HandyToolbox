@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 7,
-  "VersionName": "2.6.0",
+  "Version": 8,
+  "VersionName": "2.7.0",
   "FriendlyName": "HandyToolbox",
   "Description": "HandyToolbox editor tools for Niagara parameters, asset cleanup, reference checking, naming conventions, Sequencer presentations, and individual MP4 recording.",
   "Category": "FX",

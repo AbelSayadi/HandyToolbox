@@ -1,6 +1,6 @@
 {
   "date": "2026-10-16",
-  "plugin_version": "2.6.0",
+  "plugin_version": "2.7.0",
   "engine_version": "5.7.4",
   "platform": "Win64",
   "build": "Success",
@@ -80,19 +80,23 @@
     {
       "name": "NiagaraParamExposer.References.IdentityAndUndo",
       "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Sanity.SavedPack",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Sanity.Thresholds",
+      "result": "Success"
     }
   ],
   "fixtures": [
     "HandyCleanupFixtures",
     "HandyNamingFixtures",
     "HandyRenderFixtures",
+    "HandySanityFixtures",
     "transient copy of existing Niagara asset"
   ],
-  "render_checks": [
-    "two separate MP4 outputs",
-    "frame counts including fade-out tail",
-    "160x90 resolution at 30 FPS",
-    "fixed EV100 applied to rendered view families",
-    "startup cancellation"
-  ]
+  "test_environment": "Isolated offscreen editor. CEF GPU acceleration disabled only in test project to avoid browser renderer assertion.",
+  "log_sha256": "f83c4a001d07518a3636e2a34b59908c5aa9feb2a008e2f24b835992bbb85cab"
 }
