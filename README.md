@@ -1,12 +1,12 @@
 # HandyToolbox (Unreal Engine Editor Plugin)
 
-Editor plugin tested on **Unreal Engine 5.6.1 and 5.8.3** (Win64) that exposes Niagara module stack inputs as **User Parameters**, with a **full editor tab UI**, Python/Blueprint API, and Content Browser shortcuts.
+Editor plugin tested on **Unreal Engine 5.6.1, 5.7.4, and 5.8.3** (Win64) that exposes Niagara module stack inputs as **User Parameters**, with a **full editor tab UI**, Python/Blueprint API, and Content Browser shortcuts.
 
 ## Install
 
 1. Copy `NiagaraParamExposer` into `YourProject/Plugins/`.
 2. Regenerate project files and build the **Editor** target (Win64).
-3. Enable **Niagara Param Exposer** in *Edit → Plugins*.
+3. Enable **HandyToolbox** in *Edit → Plugins*.
 4. Restart the editor.
 
 ## Editor UI
@@ -163,11 +163,11 @@ are still protected against overwrites; existing names are not renamed.
 
 ## Engine versions
 
-See [COMPATIBILITY.md](COMPATIBILITY.md) for verified engine versions, separate binary builds, and the UEFN asset workflow. Unreal 5.8.3 now passes all nine regression suites. Unreal 5.7 remains unverified.
+See [COMPATIBILITY.md](COMPATIBILITY.md) for verified engine versions, separate binary builds, and the UEFN asset workflow. HandyToolbox 2.6 passes all 19 automation tests on UE 5.6.1, 5.7.4, and 5.8.3.
 
 ## Download prebuilt packages
 
-Ready-to-copy Windows packages for Unreal 5.6.1 and 5.8.3 are in [Packages](Packages/README.md). Each includes installation instructions.
+Ready-to-copy Windows packages for Unreal 5.6.1, 5.7.4, and 5.8.3 are in [Packages](Packages/README.md). Each includes installation instructions.
 
 ### Cleanup and Undo / Redo
 
@@ -258,3 +258,36 @@ Reference Checker shows External references highlighted by default. Local and En
 Asset Cleanup accepts multiple folders and individual assets while protecting references from retained project content. Niagara Parameters includes a collapsed Batch unused-parameter cleanup section: select folders or Niagara systems, preview, then clean the batch. One Undo restores the entire batch, including removed empty categories. Normal parameter editing remains focused on one system.
 
 Naming Convention is the fourth vertical tab. Select folders or assets, edit the enabled type/prefix/suffix rules, save rules per project, and Preview Names. Defaults include MI_, M_, MF_, T_, NS_, SM_, CC_, CA_, NM_, plus other common types. Conflicting names are skipped. Rename and Fix Redirectors uses Unreal's native rename manager and may save referring packages outside the selected folders. Review Unreal's redirector report if shown; unresolved redirectors are retained. Revert Last Rename reverses the last successful batch in the current session; it is separate from ordinary editor Undo. Save other pending content before renaming. Text paths in code/configuration are not guaranteed to update automatically.
+
+## HandyToolbox 2.4: Presentation
+
+The Presentation tab builds an ordered VFX showcase in a Level Sequence. Choose a sequence from the asset picker, use the open Sequencer, or create a new sequence through Unreal's asset dialog. Add selected Niagara systems or selected Content Browser folders, then use Up/Down to reorder the list.
+
+Set the shared duration, gap between effects, and starting offset in seconds. A row duration of 0 inherits the shared duration; another positive duration overrides that row. Later start times are recalculated automatically, preserving the gap. Each row may inherit or override the shared Loop/Once mode and attachment choice. Loop creates Niagara Component > System Life Cycle (Tick Delta Time). Once creates an FX System toggle track with one Trigger key at the row's start. Spawn tracks bound each effect to its presentation window, including cutting remaining particles at the end, so effects do not spill into the gap or next item.
+
+Attachment defaults on: select a skeletal-mesh actor in the level and choose Use Selected SKM Actor, or choose an existing skeletal actor binding from the sequence dropdown. An optional bone/socket is validated before building. Skeletal-mesh sampling detection is a hint, not a guarantee of an effect's attachment needs; custom explicit data-interface or User parameter sources may still require setup in Niagara. No Niagara System asset is modified. World effects can disable attachment globally or for individual rows.
+
+Build / Update generates spawnable Niagara actors and component tracks. Rebuilding replaces this tool's generated VFX tracks; manual edits to those tracks are replaced, so edit duration and order in the Presentation list. Existing cameras, skeletal meshes, animation and other unrelated bindings are retained. Clear Generated Tracks removes only generated VFX tracks and keeps the list for rebuilding. Clear List only clears the editable list until a later build. Build and Clear support editor Undo/Redo. Save the Level Sequence to persist the list/settings; opening it in Presentation reloads them. The sequence playback range is updated to end at the final effect.
+
+
+## Presentation recording (2.5)
+
+Record separate MP4 clips directly in **Presentation > Record MP4 Clips**.
+Build the presentation first, save your level once, then choose a camera and recording settings. Click **Record Individual MP4 Clips**. Each clip uses its VFX duration; the spacing between effects is excluded. Duration changes require rebuilding the presentation before recording.
+
+- Record all VFX, or enable **Selected VFX only** and use the row Record checkboxes.
+- Choose a selected level camera or use the sequence camera cuts. Each VFX needs a valid camera cut covering its whole duration. For nested or multiple cuts within one effect, use the selected camera override.
+- Set resolution, FPS, quality, output folder, and loop warm-up frames. Once effects receive no warm-up so their opening trigger is retained.
+- Detect or browse to FFmpeg with the libx264 encoder, then check it. FFmpeg is required for MP4 encoding and is not bundled with the plugin.
+- Progress, Cancel Recording, and Open Output are in this tab. Keep PNG frames is optional; failed or canceled work retains diagnostic files.
+
+Recording uses private temporary sequence copies and Unreal Movie Render Queue. The presentation sequence, skeletal mesh animation, and existing user render queue are preserved. Other generated presentation VFX are excluded from each clip. Frame ranges are rounded to the selected FPS. Every run gets a unique output folder; finished clips are named by list order and Niagara asset. Encoding uses temporary partial filenames until successful completion. Recording requires the editor to be outside Play mode.
+
+
+## Natural fades and viewport exposure (2.6)
+
+In Presentation, turn **Add Spawned on/off keys** off and click **Build / Update Presentation** to retain VFX actors after their slot ends. Unreal still needs a Spawned track for a sequence-owned actor: it stays checked with no keys. Auto-activation remains off; Loop/Once tracks control activation. Loop sections stop spawning at their normal end while existing particles can finish. Attachment remains active during the fade. Actors are still removed when the whole sequence stops; allow enough timeline time for the final fade.
+
+In Record MP4 Clips, **Fade-out seconds** adds recording time after each slot without moving the next effect or extending its activation. Turn Spawned keys off to capture natural tails. Other presentation VFX are removed from each recording copy, including effects whose slots would overlap the tail. Existing camera cuts must cover the additional tail, or use a selected camera. Mesh animation must also cover the time you want to record.
+
+Exposure defaults to **Match viewport exposure**. Focus your perspective level viewport before recording: its fixed EV100 override is captured when the batch starts. If the viewport uses Game Settings, recording follows camera/scene exposure. **Fixed EV100** lets you enter an explicit value; **Camera / scene exposure** deliberately uses the original scene settings. Fixed EV100 uses the same renderer exposure override as the viewport, without modifying camera assets, post-process volumes, global exposure variables, or the source sequence.

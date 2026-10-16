@@ -1,10 +1,10 @@
 # Engine compatibility
 
-Checked on 2026-10-15, Windows x64.
+Checked on 2026-10-16, Windows x64.
 
-- Unreal 5.8.3: packaged successfully and all nine automation suites passed.
-- Unreal 5.6.1: final compatibility source packaged successfully and all nine automation suites passed again.
-- Unreal 5.7: not verified. No 5.7 installation was available. Passing on 5.6 and 5.8 is not a substitute for a 5.7 build and native-editor test.
+- Unreal 5.8.3: packaged successfully and all 19 automation tests passed.
+- Unreal 5.6.1: final compatibility source packaged successfully and all 19 automation tests passed again.
+- Unreal 5.7.4: built against the installed 5.7.4 SDK and all 19 automation tests passed in an isolated editor project, including actual MP4 encoding, fixed EV100, fade-out frame counts, and cancellation.
 - UEFN: this native C++ editor plugin is not offered as a UEFN plugin. The checked Fortnite/UEFN installation does not provide the engine build SDK needed for this module. Do not copy an UnrealEditor DLL into UEFN and assume compatibility.
 
 ## Cross-version fixes
@@ -26,7 +26,7 @@ Run the full editor with -RenderOffscreen -unattended and these automation argum
 
 ```text
 -ExecCmds="Automation RunTests NiagaraParamExposer"
--HandyCleanupFixtures
+-HandyCleanupFixtures -HandyNamingFixtures -HandyRenderFixtures
 -TestExit="Automation Test Queue Empty"
 -NPETestContent=<fixture-project-content-directory>/
 -NPETestAsset=/Game/FireAura/Particles/NS_FireAura_Emitters
@@ -72,3 +72,15 @@ Automatic duplicate matching excludes unsupported/custom asset payloads; unresol
 soft/package references remain manual-review rows.
 
 HandyToolbox 2.3 adds Naming.Rules, Naming.RenameAndRedirectors, and Cleanup.BatchUndo. Naming fixtures require -HandyNamingFixtures in an isolated project; they verify saved external material references survive rename and revert. Reference tests also cover independent folder scopes and default collapsed local/allowed sections. Native rename handles asset references, but arbitrary text paths in code/configuration still require review.
+
+Presentation adds an editor dependency on LevelSequenceEditor. Schedule tests cover inherited/override durations and modes, reordering, and shifting later effects. Track tests cover lifecycle versus trigger, component binding, spawn windows, skeletal attachment, preserving unrelated bindings, rebuild and Undo/Redo.
+
+HandyToolbox 2.5 adds the MovieRenderPipeline editor plugin dependency and Recording.Configuration, Recording.RenderAndEncode, and Recording.Cancel. The recording fixtures require -HandyRenderFixtures in an isolated editor project, FFmpeg with libx264, and ffprobe beside it. They render two actual MP4 files (Loop and Once), verify frame counts, resolution and FPS, test startup cancellation, and check stale-list, selected-only, invalid-settings and camera-binding validation. Existing camera cuts and selected-camera snapshots are covered. Early cancellation waits for shot initialization before asynchronous shutdown to avoid a UE 5.6 restoration assertion. No engine source edits are required.
+
+The 2.5 final test runs passed 19/19 on both UE 5.6.1 and UE 5.8.3, including the real render/encode fixture and cancellation. Recording tests use small synthetic systems; final presentation appearance still depends on your camera, lighting and VFX setup.
+
+HandyToolbox 2.6 extends the presentation and recording tests to cover unkeyed Spawned tracks, retaining the same actor across the slot boundary, recording without reintroducing spawn keys, fade-tail frame counts, unchanged activation boundaries, and fixed/viewport/camera exposure modes. The native render smoke test confirms that the fixed-EV100 setting is applied to actual render view families. Exposure uses UMoviePipelineViewFamilySetting and FExposureSettings, matching the viewport renderer override on both supported engines.
+
+The 2.6 final builds passed 19/19 automation tests on UE 5.6.1 and UE 5.8.3, including actual MP4 rendering with fixed exposure and additional fade-out frames.
+
+UE 5.7.4 verification required no source compatibility changes. Its Win64 DLL is packaged separately; use the matching ZIP rather than a 5.6 or 5.8 binary. See Verification/UE5.7.4-Win64.json for the test result summary.

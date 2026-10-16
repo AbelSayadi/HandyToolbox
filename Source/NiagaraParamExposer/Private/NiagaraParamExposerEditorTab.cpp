@@ -3,6 +3,7 @@
 #include "NiagaraParamExposerEditorTab.h"
 #include "HandyReferenceChecker.h"
 #include "HandyNaming.h"
+#include "HandyPresentation.h"
 #include "HandyBatchParameters.h"
 
 #include "NiagaraParamExposerCore.h"
@@ -835,6 +836,8 @@ public:
                     [MakeNavigation(2, LOCTEXT("ReferencesNav", "Reference Checker"))]
                     + SVerticalBox::Slot().AutoHeight().Padding(0,4)
                     [MakeNavigation(3, LOCTEXT("NamingNav", "Naming Convention"))]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0,4)
+                    [MakeNavigation(4, LOCTEXT("PresentationNav", "Presentation"))]
                 ]]
             + SHorizontalBox::Slot().FillWidth(1)
             [SAssignNew(Pages, SWidgetSwitcher)
@@ -842,6 +845,7 @@ public:
                 + SWidgetSwitcher::Slot()[HandyAssetCleanup::MakePanel()]
                 + SWidgetSwitcher::Slot()[HandyReferences::MakePanel()]
                 + SWidgetSwitcher::Slot()[HandyNaming::MakePanel()]
+                + SWidgetSwitcher::Slot()[HandyPresentation::MakePanel()]
             ]
         ];
     }

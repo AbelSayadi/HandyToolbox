@@ -1,9 +1,9 @@
 {
   "FileVersion": 3,
-  "Version": 4,
-  "VersionName": "2.3.0",
+  "Version": 7,
+  "VersionName": "2.6.0",
   "FriendlyName": "HandyToolbox",
-  "Description": "HandyToolbox editor tools for Niagara parameters, asset cleanup, reference checking, and naming conventions.",
+  "Description": "HandyToolbox editor tools for Niagara parameters, asset cleanup, reference checking, naming conventions, Sequencer presentations, and individual MP4 recording.",
   "Category": "FX",
   "CreatedBy": "NiagaraParamExposer",
   "CreatedByURL": "",
@@ -17,6 +17,14 @@
   "Plugins": [
     {
       "Name": "Niagara",
+      "Enabled": true
+    },
+    {
+      "Name": "LevelSequenceEditor",
+      "Enabled": true
+    },
+    {
+      "Name": "MovieRenderPipeline",
       "Enabled": true
     }
   ],

@@ -82,6 +82,11 @@ bool FHandyPanelTest::RunTest(const FString&)
     Pages->SetActiveWidgetIndex(3); Labels.Reset(); Visit(Tab->GetContent());
     TestTrue(TEXT("Naming preview present"), Labels.Contains(TEXT("Preview Names")));
     TestTrue(TEXT("Naming apply present"), Labels.Contains(TEXT("Rename and Fix Redirectors")));
+    Pages->SetActiveWidgetIndex(4); Labels.Reset(); Visit(Tab->GetContent());
+    TestTrue(TEXT("Presentation build present"), Labels.Contains(TEXT("Build / Update Presentation")));
+    TestTrue(TEXT("Presentation clear present"), Labels.Contains(TEXT("Clear Generated Tracks")));
+    TestTrue(TEXT("Recording action in Presentation"), Labels.Contains(TEXT("Record Individual MP4 Clips")));
+    TestTrue(TEXT("Recording cancellation present"), Labels.Contains(TEXT("Cancel Recording")));
     Pages->SetActiveWidgetIndex(0); Labels.Reset(); Visit(Tab->GetContent());
     TestTrue(TEXT("Parameter cleanup retained"), Labels.Contains(TEXT("Clean Up Unused User Parameters")));
     TestTrue(TEXT("Undo retained"), Labels.Contains(TEXT("Undo")));

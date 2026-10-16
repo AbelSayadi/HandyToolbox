@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-16",
+  "plugin_version": "2.6.0",
+  "engine_version": "5.7.4",
+  "platform": "Win64",
+  "build": "Success",
+  "tests": [
+    {
+      "name": "NiagaraParamExposer.AssetCleanup.Dependencies",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.AssetCleanup.Navigation",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.AssetCleanup.Registry",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Categories.Regression",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Cleanup.AssetIntegration",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Cleanup.BatchUndo",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Cleanup.Regression",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Inputs.AssetIntegration",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Inputs.NativeEditor",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Inputs.SearchAndLifetime",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Naming.RenameAndRedirectors",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Naming.Rules",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Presentation.Schedule",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Presentation.TracksAndUndo",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Recording.Cancel",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Recording.Configuration",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.Recording.RenderAndEncode",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.References.FolderSelection",
+      "result": "Success"
+    },
+    {
+      "name": "NiagaraParamExposer.References.IdentityAndUndo",
+      "result": "Success"
+    }
+  ],
+  "fixtures": [
+    "HandyCleanupFixtures",
+    "HandyNamingFixtures",
+    "HandyRenderFixtures",
+    "transient copy of existing Niagara asset"
+  ],
+  "render_checks": [
+    "two separate MP4 outputs",
+    "frame counts including fade-out tail",
+    "160x90 resolution at 30 FPS",
+    "fixed EV100 applied to rendered view families",
+    "startup cancellation"
+  ]
+}

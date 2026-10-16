@@ -34,6 +34,8 @@ public class NiagaraParamExposer : ModuleRules
 				"AssetTools",
                 "AssetRegistry",
 				"PropertyEditor",
+                "LevelSequence", "LevelSequenceEditor", "MovieScene", "MovieSceneTracks", "UniversalObjectLocator",
+                "MovieRenderPipelineCore", "MovieRenderPipelineEditor", "MovieRenderPipelineRenderPasses", "DesktopPlatform",
 				"NiagaraEditor",
 				"DataHierarchyEditor",
 				"NiagaraShader",
